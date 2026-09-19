@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+  # Downloads a mongod binary; not needed until Phase 2 tests (it fetches lazily on first run).
+  mongodb-memory-server: false
+overrides:
+  postcss: ">=8.5.18"

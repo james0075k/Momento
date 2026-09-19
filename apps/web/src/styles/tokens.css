@@ -1,0 +1,14 @@
+/*
+ * Momento brand tokens. This is the ONLY file allowed to contain raw hex values.
+ * Everything else references these variables (directly or via Tailwind / shadcn mappings).
+ * White text is allowed on --brand and --ink; never on --accent (use --ink there).
+ */
+:root {
+  --brand: #d7263d; /* Gurans crimson: primary buttons, links, key accents */
+  --ink: #1b2a4e; /* Himalaya indigo: headings, dark sections, footer */
+  --accent: #f4a300; /* Marigold: badges, stars, highlights, hover glow */
+  --paper: #fbf7f2; /* page background */
+  --surface: #ffffff; /* cards */
+  --muted: #5b6478; /* secondary text */
+  --success: #1f9d6b; /* paid, delivered */
+}
