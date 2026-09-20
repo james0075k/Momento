@@ -12,15 +12,19 @@ A test (`apps/api/src/test/docs.test.ts`) fails if a route is registered but mis
 
 **Errors**: `{ "error": "message", "details"?: ... }`.
 
-| Status | Meaning                                                                                |
-| ------ | -------------------------------------------------------------------------------------- |
-| 400    | Validation failed (`details` is Zod's `flatten()`), bad id, or a business-rule failure |
-| 401    | No or invalid session                                                                  |
-| 403    | Wrong role, or missing `X-Requested-With: momento` header                              |
-| 404    | Not found (also returned for hidden/inactive items to the public)                      |
-| 409    | Duplicate slug/code, or an order status change that is not allowed                     |
-| 429    | Rate limit hit                                                                         |
-| 503    | Cloudinary is not configured                                                           |
+| Status | Meaning                                                                                                    |
+| ------ | ---------------------------------------------------------------------------------------------------------- |
+| 400    | Validation failed (`details` is Zod's `flatten()`), bad id, or a business-rule failure                     |
+| 401    | No or invalid session                                                                                      |
+| 403    | Wrong role, or missing `X-Requested-With: momento` header                                                  |
+| 404    | Not found (also returned for hidden/inactive items to the public)                                          |
+| 409    | Duplicate slug/code, or an order status change that is not allowed                                         |
+| 429    | Rate limit hit                                                                                             |
+| 500    | Unexpected fault. The body is always `{ "error": "Internal server error" }`; the cause is only in the logs |
+| 503    | Cloudinary is not configured, or the database is briefly unavailable (`Retry-After: 5`)                    |
+
+**Request id**: every answer carries an `X-Request-Id` header (readable from the browser). The same id is on that request's log lines,
+so when someone reports a problem, the short reference the web app shows ("Reference 3f2a9c1e") finds the exact log entry.
 
 **Ids**: Mongo ObjectIds as 24-char hex strings, returned as `id` (never `_id`). Where a resource has a `slug`, `:id` accepts either.
 

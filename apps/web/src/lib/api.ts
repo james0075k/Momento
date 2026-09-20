@@ -71,9 +71,24 @@ export class ApiError extends Error {
   }
 }
 
-interface ErrorBody {
+export interface ErrorBody {
   error?: string;
   details?: { fieldErrors?: Record<string, string[]> };
+}
+
+/**
+ * What to tell the person when the API answered with an error. The server's own message is used for
+ * problems they can fix (a wrong field, a full coupon) and for "busy, retry" (503). A server fault gets a
+ * plain sentence plus the short reference the API sent, so a screenshot or a WhatsApp message to the shop
+ * is enough to find it in the logs.
+ */
+export function failureMessage(res: Pick<Response, "status" | "headers">, body: ErrorBody): string {
+  if (res.status === 429) return "Too many attempts. Please wait a few minutes and try again.";
+  if (res.status >= 500 && res.status !== 503) {
+    const ref = res.headers.get("X-Request-Id")?.slice(0, 8);
+    return `Something went wrong on our side. Please try again in a moment.${ref ? ` (Reference ${ref})` : ""}`;
+  }
+  return body.error ?? "Something went wrong. Please try again.";
 }
 
 /**
@@ -100,13 +115,7 @@ export async function apiRequest<T>(
   }
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as ErrorBody;
-    throw new ApiError(
-      res.status === 429
-        ? "Too many attempts. Please wait a few minutes and try again."
-        : (body.error ?? "Something went wrong. Please try again."),
-      res.status,
-      body.details?.fieldErrors,
-    );
+    throw new ApiError(failureMessage(res, body), res.status, body.details?.fieldErrors);
   }
   const json = (await res.json()) as { data: T };
   return json.data;

@@ -21,5 +21,12 @@ mongodump --uri="$MONGODB_URI" --gzip --archive="$FILE"
 # A dump that is suspiciously small is a failed dump.
 [ "$(stat -c %s "$FILE")" -gt 1024 ] || { echo "Backup $FILE is too small, treating as failed"; exit 1; }
 
+# Optional off-server copy. Any rclone remote works (Google Drive, S3, Backblaze, another VPS over sftp):
+#   OFFSITE_DEST='remote:momento-backups'  (set up once with `rclone config`)
+if [ -n "${OFFSITE_DEST:-}" ]; then
+  rclone copy "$FILE" "$OFFSITE_DEST" || { echo "Off-site copy to $OFFSITE_DEST FAILED"; exit 1; }
+  echo "Copied off-site to $OFFSITE_DEST"
+fi
+
 find "$BACKUP_DIR" -name 'momento-*.archive.gz' -mtime +"$KEEP_DAYS" -delete
 echo "Backup written: $FILE"

@@ -1,9 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "./api";
+import { ApiError, failureMessage } from "./api";
 import { adminList, adminRequest, query, refreshSession } from "./admin-api";
 
 const json = (status: number, body: unknown) =>
-  ({ ok: status >= 200 && status < 300, status, json: async () => body }) as Response;
+  ({
+    ok: status >= 200 && status < 300,
+    status,
+    headers: new Headers(),
+    json: async () => body,
+  }) as Response;
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -127,5 +132,42 @@ describe("refreshSession", () => {
   it("is false when the request fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
     expect(await refreshSession()).toBe(false);
+  });
+});
+
+describe("failureMessage", () => {
+  const res = (status: number, id?: string) => ({
+    status,
+    headers: new Headers(id ? { "X-Request-Id": id } : {}),
+  });
+
+  it("uses the server's message for problems the person can fix", () => {
+    expect(failureMessage(res(409), { error: "Coupon usage limit reached" })).toBe(
+      "Coupon usage limit reached",
+    );
+  });
+
+  it("keeps the server's 'busy, retry' message for a 503", () => {
+    expect(
+      failureMessage(res(503), {
+        error: "The shop is busy right now. Please try again in a moment.",
+      }),
+    ).toBe("The shop is busy right now. Please try again in a moment.");
+  });
+
+  it("gives a server fault a plain sentence and the short reference, never the raw error", () => {
+    const message = failureMessage(res(500, "3f2a9c1e-aaaa-bbbb-cccc-1234567890ab"), {
+      error: "Internal server error",
+    });
+    expect(message).toBe(
+      "Something went wrong on our side. Please try again in a moment. (Reference 3f2a9c1e)",
+    );
+  });
+
+  it("copes with a server fault that has no reference, and with rate limiting", () => {
+    expect(failureMessage(res(502), {})).toBe(
+      "Something went wrong on our side. Please try again in a moment.",
+    );
+    expect(failureMessage(res(429), { error: "x" })).toMatch(/Too many attempts/);
   });
 });

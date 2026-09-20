@@ -1,11 +1,6 @@
-import { API_URL, ApiError } from "./api";
+import { API_URL, ApiError, failureMessage, type ErrorBody } from "./api";
 
 export type AdminMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-
-interface ErrorBody {
-  error?: string;
-  details?: { fieldErrors?: Record<string, string[]> };
-}
 
 export interface AdminListResult<T> {
   data: T[];
@@ -65,13 +60,7 @@ async function request(path: string, method: AdminMethod, body?: unknown): Promi
   }
   if (res.ok) return res;
   const parsed = (await res.json().catch(() => ({}))) as ErrorBody;
-  throw new ApiError(
-    res.status === 429
-      ? "Too many attempts. Please wait a few minutes and try again."
-      : (parsed.error ?? "Something went wrong. Please try again."),
-    res.status,
-    parsed.details?.fieldErrors,
-  );
+  throw new ApiError(failureMessage(res, parsed), res.status, parsed.details?.fieldErrors);
 }
 
 /** One record (the API wraps it in `{ data }`), or undefined for a 204. */

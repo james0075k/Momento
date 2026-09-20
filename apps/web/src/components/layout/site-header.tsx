@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { WishlistLink } from "@/components/wishlist/wishlist-link";
 import { useCart } from "@/lib/use-cart";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { cn } from "@/lib/utils";
 import { whatsappLink } from "@/lib/whatsapp";
 
@@ -53,9 +54,7 @@ function Logo({ className }: { className?: string }) {
         className,
       )}
     >
-      <span aria-hidden className="bg-brand relative block size-5 -rotate-6">
-        <span className="bg-paper absolute inset-x-[3px] top-[3px] h-2.5" />
-      </span>
+      <BrandMark />
       Momento
     </Link>
   );

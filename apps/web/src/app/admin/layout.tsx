@@ -6,6 +6,13 @@ import { AdminRoot } from "@/components/admin/admin-root";
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s | Momento admin" },
   robots: { index: false, follow: false },
+  // What a shared admin link looks like in WhatsApp or Messenger: the logo card, named "Momento admin".
+  openGraph: {
+    title: "Momento admin",
+    description: "Sign in to manage Momento orders, products and reviews.",
+    siteName: "Momento",
+    type: "website",
+  },
 };
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

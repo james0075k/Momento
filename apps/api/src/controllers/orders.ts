@@ -28,7 +28,11 @@ export const orderController = {
     const query = req.query as unknown as OrderListQuery;
     const filter: Record<string, unknown> = {};
     if (query.status) filter["status"] = query.status;
-    if (query.q) {
+    if (query.q && /^MOM-/i.test(query.q)) {
+      // An order code (or the start of one) is matched from its first character, so the unique index on
+      // `code` answers it instead of a scan of every order.
+      filter["code"] = new RegExp(`^${escapeRegex(query.q.toUpperCase())}`);
+    } else if (query.q) {
       const pattern = new RegExp(escapeRegex(query.q), "i");
       filter["$or"] = [
         { code: pattern },

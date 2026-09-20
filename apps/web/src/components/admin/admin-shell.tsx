@@ -4,6 +4,7 @@ import { LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { cn } from "@/lib/utils";
 import { isActive, navFor } from "./nav";
 import { useAdmin } from "./session";
@@ -84,7 +85,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <div className="bg-paper text-ink print:bg-surface min-h-screen md:grid md:grid-cols-[16rem_1fr] print:block">
       <aside className="bg-ink text-surface hidden flex-col justify-between p-4 md:sticky md:top-0 md:flex md:h-screen print:hidden">
         <div>
-          <p className="font-heading mb-6 px-3 text-2xl font-semibold">Momento admin</p>
+          <p className="font-heading mb-6 flex items-center gap-3 px-3 text-2xl font-semibold">
+            <BrandMark backed />
+            Momento admin
+          </p>
           <nav aria-label="Admin">
             <NavList />
           </nav>
@@ -94,7 +98,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
       <div className="min-w-0">
         <div className="bg-ink text-surface flex h-14 items-center justify-between px-4 md:hidden print:hidden">
-          <p className="font-heading text-xl font-semibold">Momento admin</p>
+          <p className="font-heading flex items-center gap-2 text-xl font-semibold">
+            <BrandMark backed />
+            Momento admin
+          </p>
           <button
             ref={menuButton}
             type="button"
@@ -118,7 +125,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
         >
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <p className="font-heading px-3 text-2xl font-semibold">Momento admin</p>
+              <p className="font-heading flex items-center gap-3 px-3 text-2xl font-semibold">
+                <BrandMark backed />
+                Momento admin
+              </p>
               <button
                 ref={closeButton}
                 type="button"

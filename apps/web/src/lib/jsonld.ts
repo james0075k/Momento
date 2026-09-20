@@ -25,7 +25,7 @@ export function organizationLd(settings: Settings): JsonLdObject {
     "@id": ORG_ID,
     name: SITE_NAME,
     url: SITE_URL,
-    logo: absoluteUrl("/icon.svg"),
+    logo: absoluteUrl("/icon/512"),
     description:
       "Momento prints photo books, framed prints, magnets and canvases in Nepal and delivers them across the country.",
     ...(sameAs.length > 0 ? { sameAs } : {}),
@@ -283,7 +283,7 @@ export function articleLd(input: {
     dateModified: input.modified ?? input.published,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-    publisher: { ...orgRef(), logo: { "@type": "ImageObject", url: absoluteUrl("/icon.svg") } },
+    publisher: { ...orgRef(), logo: { "@type": "ImageObject", url: absoluteUrl("/icon/512") } },
   };
 }
 

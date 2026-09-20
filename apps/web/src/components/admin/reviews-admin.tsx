@@ -39,6 +39,17 @@ const secondary = `${buttonClass} border-input bg-surface border`;
 const failure = (error: unknown): string =>
   error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
 
+/** Reads every page of a list (100 at a time, up to 1000 rows: far more than a shop's catalogue). */
+async function listAll<T>(path: string): Promise<T[]> {
+  const rows: T[] = [];
+  for (let page = 1; page <= 10; page++) {
+    const result = await adminList<T>(`${path}&limit=100&page=${page}`);
+    rows.push(...result.data);
+    if (page >= result.meta.totalPages) break;
+  }
+  return rows;
+}
+
 function ReplyForm({
   review,
   onSaved,
@@ -249,17 +260,17 @@ export function ReviewsAdmin() {
     () => adminList<Review>(`/reviews${query({ page, limit: LIMIT, status })}`),
     [status, page],
   );
-  // Names for the "on <product>" line. Only the first 100 of each are looked up; others read "an item".
-  const products = useAdminData(() =>
-    adminList<Product>("/products?limit=100&includeInactive=true"),
-  );
-  const services = useAdminData(() =>
-    adminList<Service>("/services?limit=100&includeInactive=true"),
-  );
-  const names = new Map<string, string>([
-    ...(products.data?.data ?? []).map((item): [string, string] => [item.id, item.title]),
-    ...(services.data?.data ?? []).map((item): [string, string] => [item.id, item.title]),
-  ]);
+  // Names for the "on <product>" line: every page of products and services, so no review says "an item".
+  const catalogNames = useAdminData(async () => {
+    const [products, services] = await Promise.all([
+      listAll<Product>("/products?includeInactive=true"),
+      listAll<Service>("/services?includeInactive=true"),
+    ]);
+    return new Map(
+      [...products, ...services].map((item): [string, string] => [item.id, item.title]),
+    );
+  });
+  const names = catalogNames.data ?? new Map<string, string>();
 
   return (
     <>

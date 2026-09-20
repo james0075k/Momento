@@ -35,6 +35,14 @@ process.on("unhandledRejection", (reason) => {
   reportError(reason);
 });
 
+// After an uncaught exception the process may be half-broken (open transactions, a request that never
+// answers). Log it, tell Sentry, and exit so PM2 starts a clean process; the shutdown timer covers the flush.
+process.on("uncaughtException", (error) => {
+  logger.fatal({ err: error }, "Uncaught exception, exiting");
+  reportError(error);
+  setTimeout(() => process.exit(1), 1_000).unref();
+});
+
 main().catch((error: unknown) => {
   logger.error({ err: error }, "Failed to start server");
   reportError(error);

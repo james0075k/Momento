@@ -64,6 +64,8 @@ const orderSchema = new Schema(
   { timestamps: true },
 );
 
+// The unfiltered orders list, the dashboard and the customers pipeline all sort or range on createdAt.
+orderSchema.index({ createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ "customer.phone": 1 });
 

@@ -70,6 +70,23 @@ describe("order notes", () => {
   });
 });
 
+describe("order search", () => {
+  it("finds an order by its full or partial code, in any letter case", async () => {
+    const app = testApp();
+    const { magnet } = await createCatalog();
+    const order = await placeOrder(app, magnet.id);
+    const staff = await loginAs(app, "staff");
+
+    for (const q of [order.code, order.code.toLowerCase(), order.code.slice(0, 9)]) {
+      const res = await staff.get(`/orders?q=${encodeURIComponent(q)}`);
+      expect(res.body.data.map((o: { code: string }) => o.code)).toEqual([order.code]);
+    }
+    expect((await staff.get("/orders?q=MOM-1999")).body.data).toHaveLength(0);
+    // Text that only looks like a pattern is matched literally.
+    expect((await staff.get("/orders?q=MOM-.*")).body.data).toHaveLength(0);
+  });
+});
+
 describe("review replies", () => {
   const submit = async (app: Express, productId: string) =>
     (

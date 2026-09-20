@@ -5,6 +5,7 @@ import { bannerIsLive, isFeatureOn, resolveFeatures } from "@momento/shared";
 import { Toaster } from "sonner";
 import { FeaturesProvider } from "@/components/features/features-provider";
 import { FestivalBanner } from "@/components/promotions/festival-banner";
+import { brandTokens } from "@/lib/brand-image";
 import { getSettings } from "@/lib/catalog";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -22,14 +23,18 @@ export const metadata: Metadata = {
   title: { default: `${SITE_NAME}: ${SITE_TAGLINE}`, template: `%s | ${SITE_NAME}` },
   description: DEFAULT_DESCRIPTION,
   applicationName: SITE_NAME,
+  // Defaults for pages that set none (admin, sign-in): the logo card from opengraph-image.tsx is added by Next.
+  openGraph: { siteName: SITE_NAME, locale: "en_NP", type: "website" },
+  twitter: { card: "summary_large_image" },
   // Google Search Console token: set GOOGLE_SITE_VERIFICATION to the content of the meta tag it gives you.
   verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined },
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-};
+export async function generateViewport(): Promise<Viewport> {
+  // The browser toolbar takes the brand colour on phones. Read from tokens.css: a viewport cannot use CSS variables.
+  const color = await brandTokens();
+  return { width: "device-width", initialScale: 1, themeColor: color.brand };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Feature flags come from Settings (cached, tagged "settings"). If the API is down every flag reads as off.

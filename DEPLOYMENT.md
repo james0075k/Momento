@@ -209,6 +209,62 @@ Check the data in `momento_restore`, then copy what you need or swap the URI. Do
 every quarter; a backup you have never restored is a guess. If you move to a paid Atlas tier
 (M10+), turn on Cloud Backup as well.
 
+### Off-server copy
+
+Set `OFFSITE_DEST` in the cron line and the backup script copies each file with `rclone` right after the dump (set the remote up
+once with `rclone config`; Google Drive, Backblaze B2, S3 or another VPS all work). If the copy fails, the script exits with an
+error, so the log shows it.
+
+```bash
+30 2 * * *  MONGODB_URI='...' OFFSITE_DEST='remote:momento-backups' BACKUP_DIR=/var/backups/momento bash .../backup-mongo.sh >> /var/log/momento-backup.log 2>&1
+```
+
+What a database backup does **not** hold: the pictures. Product images and customers' uploaded photos live in Cloudinary (the
+database keeps only their links), so they are protected by Cloudinary, not by this backup. Secrets (`.env`) are not in it either:
+keep them in a password manager.
+
+### Restoring with the script
+
+`deploy/restore-mongo.sh` wraps the command above. It restores into a new `momento_restore` database by default, and refuses to
+overwrite the live one unless you also set `I_UNDERSTAND_THIS_OVERWRITES=yes`.
+
+```bash
+TARGET_URI='mongodb+srv://...' ARCHIVE=/var/backups/momento/momento-<date>.archive.gz bash deploy/restore-mongo.sh
+```
+
+### Moving the database (new cluster, new provider, new region)
+
+`deploy/transfer-mongo.sh` streams the database from the old place to the new one without writing a file:
+
+```bash
+SOURCE_URI='mongodb+srv://old...' TARGET_URI='mongodb+srv://new...' bash deploy/transfer-mongo.sh
+```
+
+1. Create the new database and allow the VPS's IP address in its network access list.
+2. Run the transfer once as a rehearsal, and check that the counts match on both sides (orders, products, reviews, users).
+3. Pick a quiet moment (orders placed after the copy would be missing), stop the API (`pm2 stop momento-api`), run the transfer
+   again into an empty target, and compare the counts once more.
+4. Change `MONGODB_URI` in the shared `.env`, then `pm2 start momento-api` (or `pm2 restart momento-api --update-env`).
+   `/health/ready` must answer `ok`.
+5. Keep the old database untouched for a week before deleting it.
+
+Both databases must run a compatible MongoDB version (the new one may be the same or newer, not older).
+The indexes come across with the data, and the API also creates any that are missing when it starts.
+
+## Many shoppers at once
+
+- The API keeps at most 20 database connections and gives up on a stuck database after 5 seconds, so a slow database shows a
+  clear error instead of freezing the shop. If the database is down when the API starts, it retries every 10 seconds by itself.
+- Orders, coupons and gift cards are claimed with atomic updates: 100 orders placed at the same moment produced no duplicate order
+  codes and never went past a coupon's use limit (this is tested).
+- Rate limits are counted in the API's memory, which is why PM2 runs **one** instance. A restart resets the counters, and
+  going to several instances needs a shared store (Redis) first.
+- The admin lists are paged (at most 100 rows) and use indexes. With 30,000 orders the orders list answers in about 30 ms, the
+  dashboard in about 130 ms and the customers list in about 170 ms on a laptop. The customers list reads every order each time,
+  so its time grows with the number of orders; if it passes about a second (roughly 200,000 orders), keep a customers collection
+  updated as orders arrive instead.
+- Searching orders by text scans the orders. That is fine for tens of thousands of orders; beyond that, search by order code only.
+
 ## 9. How a deploy works
 
 1. You merge to `main`.

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { type Express } from "express";
@@ -56,12 +57,23 @@ export function createApp(options: { rateLimits?: Partial<RateLimitOptions> } = 
     cors({
       origin: env.corsAllowedOrigins.length > 0 ? env.corsAllowedOrigins : false,
       credentials: true,
+      // The web app shows this id as a reference when something fails, so it must be readable across origins.
+      exposedHeaders: ["X-Request-Id"],
     }),
   );
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
   app.use(mongoSanitize());
-  app.use(pinoHttp({ logger }));
+  app.use(
+    pinoHttp({
+      logger,
+      genReqId: (_req, res) => {
+        const id = randomUUID();
+        res.setHeader("X-Request-Id", id);
+        return id;
+      },
+    }),
+  );
 
   app.use(limiter(env.RATE_LIMIT_GLOBAL));
   app.use(requireCsrfHeader);

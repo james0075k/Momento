@@ -25,6 +25,8 @@ export const customerController = {
       count: Array<{ total: number }>;
     }>([
       { $sort: { createdAt: 1 } },
+      // Keep only what is used, so a large shop does not carry every order field through the pipeline.
+      { $project: { "customer.name": 1, "customer.phone": 1, status: 1, total: 1, createdAt: 1 } },
       { $addFields: { digits } },
       { $addFields: { key: { $substrCP: ["$digits", start, 10] } } },
       { $match: { key: { $ne: "" } } },
@@ -62,7 +64,7 @@ export const customerController = {
           count: [{ $count: "total" }],
         },
       },
-    ]);
+    ]).option({ allowDiskUse: true });
 
     const rows = (result?.rows ?? []).map((row) => ({
       ...row,

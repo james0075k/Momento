@@ -10,6 +10,9 @@ Open <http://localhost:3000/admin> (or `https://your-domain/admin`). With `pnpm 
 | Sign in   | anyone       | Email and password. Wrong details show one clear message; too many tries show a wait message.                      |
 | Dashboard | staff, admin | Orders and revenue for today and this month, waiting payments, orders by status, top products, reviews to approve. |
 
+| Orders | staff, admin | Search by code, name or phone and filter by status. Open an order for its items, totals, customer, photos and note; move it forward with one button (Mark as paid, Start printing, Mark as shipped, Mark as delivered) or cancel it after a confirmation; write notes for the team; print a delivery slip; and reply or share on WhatsApp. |
+| Reviews | staff, admin | Reviews wait here until approved. Approve, reject or move a review back to waiting, write a public reply that shows under the review on the product page, and (admins only) delete. |
+| Customers | staff, admin | Worked out from orders, one row per phone number: orders, amount spent (cancelled orders left out), first and last order, and a link to their orders. |
 | Products | staff, admin | Search and filter (category, visible or hidden); create and edit with rich-text description, images, sizes with their own prices, highlights, occasions, specs, questions and answers, search-result text. Only admins delete. |
 | Services | staff, admin | Same idea, plus "show on the home page" and a position. |
 | Categories | staff, admin | Name, image, position, visible or hidden. Only admins delete. |
@@ -17,7 +20,7 @@ Open <http://localhost:3000/admin> (or `https://your-domain/admin`). With `pnpm 
 | Coupons | admin | Percent or fixed amount, minimum order, last day (Nepal time), how many times it can be used. |
 | Gift cards | admin | Issue a card after the customer has paid, copy the code, switch a card on or off. Needs the "Gift cards" feature to be on. |
 
-More screens (orders, reviews, customers, settings, feature switches, team, audit log) are added milestone by milestone.
+More screens (settings, feature switches, team, audit log) are added milestone by milestone.
 Days and months on the dashboard are **Nepal time** (a day starts at 00:00 in Nepal).
 
 ## Roles
@@ -58,3 +61,18 @@ Earlier and Later to change the order.
 
 The description boxes are a small editor: bold, italic, headings, lists and links. The shop cleans the result again before
 showing it, so nothing unsafe can get through.
+
+## Orders: notes, slip and WhatsApp
+
+- **Status buttons** only offer what is allowed next. If a colleague changed the order first, you get a message and the page shows the
+  current status. A cancelled or delivered order is finished.
+- **Notes for the team** are saved on their own, without changing the status, and are never shown to the customer.
+- **Print slip** opens a page laid out for paper (name, phone, address, items, note, total). Use the Print button, or your
+  browser's print; the menu and buttons do not print. The slip holds the address, so keep printed slips with the parcel.
+- **WhatsApp** (needs the "Order alerts" feature to be on): _Reply to customer_ opens a chat with a message that fits the current
+  status; _Share with team_ writes the order out to forward to a printer or rider, without the phone number or the address.
+
+## Reviews: replying
+
+A reply is public: it shows as "Reply from Momento" under the review on the product page, but only while the review is approved.
+Saving an empty reply removes it. Approving, rejecting and replying refresh the product page within a moment.

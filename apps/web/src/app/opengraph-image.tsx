@@ -1,22 +1,13 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { ImageResponse } from "next/og";
+import { brandTokens, MarkImage, wordmarkFont } from "@/lib/brand-image";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
 export const alt = `${SITE_NAME}: ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-/** ImageResponse cannot read CSS variables, so the brand colours are read from tokens.css itself. */
-async function brandTokens(): Promise<Record<string, string>> {
-  const css = await readFile(path.join(process.cwd(), "src/styles/tokens.css"), "utf8");
-  return Object.fromEntries(
-    [...css.matchAll(/--([a-z]+):\s*(#[0-9a-f]{6})/gi)].map((m) => [m[1], m[2]]),
-  );
-}
-
 export default async function OpengraphImage() {
-  const color = await brandTokens();
+  const [color, font] = await Promise.all([brandTokens(), wordmarkFont()]);
   return new ImageResponse(
     <div
       style={{
@@ -30,19 +21,17 @@ export default async function OpengraphImage() {
         color: color.paper,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-        <div
-          style={{ width: 56, height: 56, background: color.brand, transform: "rotate(-6deg)" }}
-        />
-        <div style={{ fontSize: 88, fontWeight: 700 }}>{SITE_NAME}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+        <MarkImage size={96} color={color} />
+        <div style={{ fontFamily: "Fraunces", fontSize: 112, fontWeight: 600 }}>{SITE_NAME}</div>
       </div>
-      <div style={{ marginTop: 40, fontSize: 52, lineHeight: 1.2, maxWidth: 900 }}>
+      <div style={{ marginTop: 48, fontSize: 52, lineHeight: 1.2, maxWidth: 900 }}>
         {SITE_TAGLINE}
       </div>
       <div style={{ marginTop: 40, fontSize: 32, color: color.accent }}>
         Order on WhatsApp · Prices in NPR
       </div>
     </div>,
-    size,
+    { ...size, fonts: [font] },
   );
 }
