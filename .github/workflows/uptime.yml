@@ -1,0 +1,32 @@
+name: Uptime check
+
+# Pings the API's /health/ready (which also checks MongoDB) and the storefront every 15 minutes.
+# A failed run emails everyone watching the repo's Actions. GitHub schedules can run late, so for
+# paging use a dedicated monitor too (see DEPLOYMENT.md, "Monitoring").
+# Set the repository variables API_BASE_URL (e.g. https://api.momento.com.np) and SITE_URL.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: API readiness
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          [ -n "$API_BASE_URL" ] || { echo "Set the API_BASE_URL repository variable"; exit 1; }
+          curl --fail --silent --show-error --max-time 20 --retry 2 --retry-delay 5 "$API_BASE_URL/health/ready"
+
+      - name: Storefront
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          [ -n "$SITE_URL" ] || { echo "Set the SITE_URL repository variable"; exit 1; }
+          curl --fail --silent --show-error --max-time 20 --retry 2 --retry-delay 5 --output /dev/null "$SITE_URL/"

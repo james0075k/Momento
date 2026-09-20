@@ -32,6 +32,8 @@
   --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-success: var(--success);
+  /* Warm brand wash for alternating bands: paper with a touch of Gurans crimson. */
+  --color-tint: color-mix(in srgb, var(--brand) 4%, var(--paper));
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -74,4 +76,78 @@
   h4 {
     @apply font-heading;
   }
+}
+
+/* Hero images ease in slowly while their slide is showing (transform only). */
+@keyframes hero-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+.hero-zoom {
+  animation: hero-zoom 8s ease-out forwards;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/*
+ * Big monitors: everything is sized in rem, so growing the root size scales type, spacing and the
+ * 72rem content column together. It starts at 16px where the 1536px breakpoint begins, so nothing
+ * jumps, and stops at 24px so 4K screens do not get cartoonish.
+ */
+@media (min-width: 96rem) {
+  html {
+    font-size: clamp(16px, 1.05vw, 24px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Trust strip: two identical rows, so moving left by half the track is a seamless loop. */
+@keyframes marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee-track {
+  animation: marquee 45s linear infinite;
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
+.menu-in {
+  animation: menu-in 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .menu-in,
+  .hero-zoom {
+    animation: none;
+  }
+}
+
+/* Soft brand wash for the alternating light sections: paper with a faint crimson glow at the side. */
+@utility bg-wash {
+  background-color: var(--paper);
+  background-image: radial-gradient(
+    ellipse at 92% 50%,
+    color-mix(in srgb, var(--brand) 6%, transparent),
+    transparent 62%
+  );
 }

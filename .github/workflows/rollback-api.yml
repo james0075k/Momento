@@ -1,0 +1,54 @@
+name: Roll back API
+
+# Run from the Actions tab. Switches the Hostinger API back to an earlier release.
+# The web app is rolled back separately in Vercel (see DEPLOYMENT.md, "Rollback").
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Release id to switch to (a 12-character commit id). Leave empty for the previous release."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      APP_DIR: ${{ vars.API_APP_DIR || '/var/www/momento-api' }}
+      RELEASE: ${{ inputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || '22' }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          {
+            echo "Host hostinger"
+            echo "  HostName $SSH_HOST"
+            echo "  User $SSH_USER"
+            echo "  Port $SSH_PORT"
+            echo "  IdentityFile ~/.ssh/deploy_key"
+            echo "  IdentitiesOnly yes"
+            echo "  StrictHostKeyChecking yes"
+          } > ~/.ssh/config
+
+      - name: Switch releases
+        run: |
+          # The release id is checked here so nothing odd reaches the remote shell.
+          if [ -n "$RELEASE" ] && ! [[ "$RELEASE" =~ ^[0-9a-f]{12}$ ]]; then
+            echo "Release must be a 12-character commit id"; exit 1
+          fi
+          ssh hostinger "APP_DIR='$APP_DIR' bash -s -- $RELEASE" < deploy/rollback.sh

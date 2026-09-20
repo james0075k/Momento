@@ -1,0 +1,33 @@
+name: Daily summary email
+
+# Asks the API to email the daily order summary (needs the dailySummary flag on and Resend configured,
+# see DEPLOYMENT.md). 13:45 UTC is 19:30 in Nepal. GitHub can start scheduled runs a few minutes late.
+# Repository variable: API_BASE_URL. Repository secret: CRON_SECRET (same value as on the API server).
+on:
+  schedule:
+    - cron: "45 13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send the summary
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          [ -n "$API_BASE_URL" ] || { echo "Set the API_BASE_URL repository variable"; exit 1; }
+          [ -n "$CRON_SECRET" ] || { echo "Set the CRON_SECRET repository secret"; exit 1; }
+          # The response holds customer names, so it is discarded: only success or failure is shown.
+          curl --fail --silent --show-error --max-time 60 --output /dev/null \
+            --request POST "$API_BASE_URL/internal/daily-summary" \
+            --header "x-cron-secret: $CRON_SECRET" \
+            --header "X-Requested-With: momento" \
+            --header "Content-Type: application/json" \
+            --data '{}'
+          echo "Summary sent"

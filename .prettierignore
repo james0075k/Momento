@@ -6,3 +6,10 @@ out
 coverage
 pnpm-lock.yaml
 .turbo
+
+.next-e2e
+playwright-report
+test-results
+
+.mongo-data
+.mongo-e2e

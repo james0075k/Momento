@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "pnpm --parallel --filter ./apps/* run dev",
+    "dev:local": "pnpm --parallel --filter @momento/api --filter @momento/web run dev:local",
     "build": "pnpm --recursive --if-present run build",
     "lint": "pnpm --recursive run lint",
     "typecheck": "pnpm --recursive run typecheck",

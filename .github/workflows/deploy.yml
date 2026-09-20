@@ -1,0 +1,158 @@
+name: CI/CD
+
+# Push to main: run all checks, then deploy the web app to Vercel and the API to Hostinger.
+# Pull request: run all checks, then publish a Vercel preview of the web app.
+# The deploy jobs need the checks, so one failing test blocks the deploy.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  checks:
+    name: Checks
+    uses: ./.github/workflows/ci.yml
+
+  # ---------------------------------------------------------------- pull requests
+  preview:
+    name: Vercel preview
+    needs: checks
+    # Secrets are not available to fork PRs or Dependabot, and we would not want to build their code with them.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Pull Vercel preview settings
+        run: pnpm dlx vercel@latest pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build
+        run: pnpm dlx vercel@latest build --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy preview
+        id: deploy
+        run: |
+          url=$(pnpm dlx vercel@latest deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+      - name: Comment the preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- momento-preview -->';
+            const body = `${marker}\nPreview: ${{ steps.deploy.outputs.url }}`;
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo, issue_number: context.issue.number,
+            });
+            const existing = comments.find((c) => c.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+            }
+
+  # ---------------------------------------------------------------- main
+  # The web app deploys after the API: the API stays backward compatible, so the old site keeps working
+  # until the new one goes live.
+  deploy-web:
+    name: Deploy web to Vercel
+    needs: [checks, deploy-api]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-web
+      cancel-in-progress: false
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Pull Vercel production settings
+        run: pnpm dlx vercel@latest pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build
+        run: pnpm dlx vercel@latest build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy to production
+        run: pnpm dlx vercel@latest deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  deploy-api:
+    name: Deploy API to Hostinger
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-api
+      cancel-in-progress: false
+    env:
+      APP_DIR: ${{ vars.API_APP_DIR || '/var/www/momento-api' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build the API bundle
+        run: pnpm --filter @momento/api build
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          # The server's host key is pinned in a secret, so a man in the middle cannot swap the server.
+          KNOWN_HOSTS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT || '22' }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          {
+            echo "Host hostinger"
+            echo "  HostName $SSH_HOST"
+            echo "  User $SSH_USER"
+            echo "  Port $SSH_PORT"
+            echo "  IdentityFile ~/.ssh/deploy_key"
+            echo "  IdentitiesOnly yes"
+            echo "  StrictHostKeyChecking yes"
+          } > ~/.ssh/config
+
+      - name: Upload the release
+        run: |
+          sha="${GITHUB_SHA::12}"
+          ssh hostinger "mkdir -p '$APP_DIR/releases/$sha' '$APP_DIR/shared'"
+          # The whole workspace (minus build output and dependencies) plus the freshly built API bundle,
+          # so pnpm sees the same workspace the lockfile was made from.
+          rsync -az \
+            --exclude node_modules --exclude .git --exclude .next --exclude .next-e2e \
+            --exclude .vercel --exclude playwright-report --exclude test-results \
+            -e ssh ./ "hostinger:$APP_DIR/releases/$sha/"
+
+      # Installs production dependencies, points "current" at the release, reloads PM2, checks
+      # /health/ready and switches back to the previous release by itself if the check fails.
+      - name: Switch to the new release and restart with PM2
+        run: |
+          sha="${GITHUB_SHA::12}"
+          ssh hostinger "APP_DIR='$APP_DIR' bash -s -- '$sha'" < deploy/remote-release.sh

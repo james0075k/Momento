@@ -7,11 +7,46 @@ import helmet from "helmet";
 import pinoHttp from "pino-http";
 import { env } from "./config/env";
 import { logger } from "./config/logger";
+import { auditAdminActions } from "./middleware/audit";
+import { requireCsrfHeader } from "./middleware/csrf";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
-import { healthRouter } from "./routes/health";
+import { buildRoutes } from "./routes";
 
-export function createApp(): Express {
+export interface RateLimitOptions {
+  /** Failed login attempts allowed per IP per 15 minutes. */
+  login: number;
+  /** Orders per IP per 15 minutes. */
+  createOrder: number;
+  /** Reviews per IP per 15 minutes. */
+  createReview: number;
+  /** Order tracking and coupon checks per IP per 15 minutes. */
+  lookup: number;
+  /** Customer photo-upload signatures per IP per 15 minutes. */
+  upload: number;
+}
+
+const DEFAULT_LIMITS: RateLimitOptions = {
+  login: 10,
+  createOrder: 20,
+  createReview: 10,
+  lookup: 60,
+  upload: 40,
+};
+
+function limiter(limit: number, skipSuccessfulRequests = false) {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests,
+    message: { error: "Too many requests, please try again later" },
+  });
+}
+
+export function createApp(options: { rateLimits?: Partial<RateLimitOptions> } = {}): Express {
   const app = express();
+  const limits = { ...DEFAULT_LIMITS, ...options.rateLimits };
 
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
@@ -28,15 +63,20 @@ export function createApp(): Express {
   app.use(mongoSanitize());
   app.use(pinoHttp({ logger }));
 
-  const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 300,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  app.use(generalLimiter);
+  app.use(limiter(env.RATE_LIMIT_GLOBAL));
+  app.use(requireCsrfHeader);
+  app.use(auditAdminActions);
 
-  app.use("/health", healthRouter);
+  const limiters = {
+    login: limiter(limits.login, true),
+    createOrder: limiter(limits.createOrder),
+    createReview: limiter(limits.createReview),
+    lookup: limiter(limits.lookup),
+    upload: limiter(limits.upload),
+  };
+  for (const [prefix, router] of buildRoutes(limiters)) {
+    app.use(prefix, router);
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);

@@ -4,6 +4,7 @@ node_modules/
 
 # Build outputs
 .next/
+.next-e2e/
 dist/
 build/
 out/
@@ -35,3 +36,11 @@ coverage/
 
 # Next.js (generated)
 next-env.d.ts
+
+# Local development database (pnpm dev:local)
+.mongo-data/
+.mongo-e2e/
+
+# Playwright
+playwright-report/
+test-results/
