@@ -21,7 +21,7 @@ jobs:
       APP_DIR: ${{ vars.API_APP_DIR || '/var/www/momento-api' }}
       RELEASE: ${{ inputs.release }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up SSH
         env:
