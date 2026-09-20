@@ -259,6 +259,10 @@ Staff. Full order including customer details and `statusHistory`.
 
 Staff. Body `{ status, adminNotes? }`. Applies the transition table above atomically and appends to `statusHistory` with the actor's user id. `409` if the transition is not allowed.
 
+### `PATCH /orders/:id/notes`
+
+Staff. Body `{ adminNotes }` (up to 1000 characters; an empty string clears them). Changes the notes only: the status and its history stay as they are. The notes are never shown to the customer. `404` if the order does not exist.
+
 ## Reviews
 
 Reviews start as `pending` and only show publicly once staff set them to `approved`. Submitted `status` or `verified` values are ignored.
@@ -275,9 +279,19 @@ Public, reviews rate limit. Body `reviewInputSchema`: exactly one of `productId`
 
 Staff. Body `{ status: "pending" | "approved" | "rejected" }`. Can also un-approve a review.
 
+### `PATCH /reviews/:id/reply`
+
+Staff. Body `{ reply }` (up to 1000 characters; an empty string removes the reply). The reply is public, and shows under the review only while the review is `approved`. `404` if the review does not exist.
+
 ### `DELETE /reviews/:id`
 
 Admin. `204`.
+
+## Customers
+
+### `GET /customers`
+
+Staff. Query: `page`, `limit`, `q` (matches name or phone). There is no customers collection: each row is worked out from the orders, one per phone number (last 10 digits), newest name and phone format winning. Row: `{ key, name, phone, orders, spent, firstOrderAt, lastOrderAt }`; `spent` leaves cancelled orders out. Newest customer activity first.
 
 ## Coupons
 

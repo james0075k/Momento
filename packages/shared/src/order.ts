@@ -125,6 +125,12 @@ export const updateOrderStatusInputSchema = z.object({
 });
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusInputSchema>;
 
+/** Staff-only notes on an order. An empty string clears them. */
+export const updateOrderNotesInputSchema = z.object({
+  adminNotes: z.string().trim().max(1000),
+});
+export type UpdateOrderNotesInput = z.infer<typeof updateOrderNotesInputSchema>;
+
 export const orderListQuerySchema = paginationQuerySchema.extend({
   status: orderStatusSchema.optional(),
   q: z.string().trim().min(1).max(100).optional(),

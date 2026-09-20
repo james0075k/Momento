@@ -13,6 +13,7 @@ import {
   couponValidateInputSchema,
   createOrderInputSchema,
   createUserInputSchema,
+  customerListQuerySchema,
   homeSectionInputSchema,
   homeSectionUpdateSchema,
   idParamsSchema,
@@ -26,10 +27,12 @@ import {
   reviewInputSchema,
   reviewListQuerySchema,
   reviewModerationSchema,
+  reviewReplyInputSchema,
   serviceInputSchema,
   serviceUpdateSchema,
   settingsInputSchema,
   trackOrderInputSchema,
+  updateOrderNotesInputSchema,
   updateOrderStatusInputSchema,
 } from "@momento/shared";
 import { type RequestHandler, Router } from "express";
@@ -41,6 +44,7 @@ import {
   homeSectionController,
   serviceController,
 } from "../controllers/catalog";
+import { customerController } from "../controllers/customers";
 import { couponPublicController, orderController } from "../controllers/orders";
 import { productController } from "../controllers/products";
 import { exportController } from "../controllers/exports";
@@ -254,11 +258,24 @@ export function buildRoutes(limiters: Limiters): Array<[string, Router]> {
     validate({ body: updateOrderStatusInputSchema }),
     orderController.updateStatus,
   );
+  orders.patch(
+    "/:id/notes",
+    ...staffOrAdmin,
+    idParams,
+    validate({ body: updateOrderNotesInputSchema }),
+    orderController.updateNotes,
+  );
 
   const stats = Router();
   stats.get("/dashboard", ...staffOrAdmin, statsController.dashboard);
 
   const customers = Router();
+  customers.get(
+    "/",
+    ...staffOrAdmin,
+    validate({ query: customerListQuerySchema }),
+    customerController.list,
+  );
   customers.get(
     "/export.csv",
     requireFeature("csvExport"),
@@ -300,6 +317,13 @@ export function buildRoutes(limiters: Limiters): Array<[string, Router]> {
     idParams,
     validate({ body: reviewModerationSchema }),
     reviewController.moderate,
+  );
+  reviews.patch(
+    "/:id/reply",
+    ...staffOrAdmin,
+    idParams,
+    validate({ body: reviewReplyInputSchema }),
+    reviewController.reply,
   );
   reviews.delete("/:id", ...adminOnly, idParams, reviewController.remove);
 

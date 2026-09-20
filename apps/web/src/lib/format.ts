@@ -11,3 +11,26 @@ export function plainText(html: string, maxLength = 140): string {
     .trim();
   return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
 }
+
+/** "20 Sep 2026, 14:05", always in Nepal time whatever the browser's zone is. */
+export function formatNepalDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Kathmandu",
+  });
+}
+
+/** "20 Sep 2026" in Nepal time. */
+export function formatNepalDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kathmandu",
+  });
+}

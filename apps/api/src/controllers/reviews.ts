@@ -1,4 +1,9 @@
-import type { ReviewInput, ReviewListQuery, ReviewModeration } from "@momento/shared";
+import type {
+  ReviewInput,
+  ReviewListQuery,
+  ReviewModeration,
+  ReviewReplyInput,
+} from "@momento/shared";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { HttpError } from "../middleware/errorHandler";
 import { OrderModel } from "../models/Order";
@@ -75,6 +80,18 @@ export const reviewController = {
     const review = await ReviewModel.findByIdAndUpdate(
       (req.params as { id: string }).id,
       { $set: { status } },
+      { new: true },
+    );
+    if (!review) throw new HttpError(404, "Review not found");
+    res.json({ data: review });
+  }),
+
+  /** Staff. Sets the shop's public reply; an empty reply removes it. */
+  reply: asyncHandler(async (req, res) => {
+    const { reply } = req.body as ReviewReplyInput;
+    const review = await ReviewModel.findByIdAndUpdate(
+      (req.params as { id: string }).id,
+      reply ? { $set: { reply, repliedAt: new Date() } } : { $unset: { reply: "", repliedAt: "" } },
       { new: true },
     );
     if (!review) throw new HttpError(404, "Review not found");

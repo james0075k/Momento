@@ -90,6 +90,12 @@ export function ReviewsSection({ productId, reviews, summary }: ReviewsSectionPr
                   <p className="text-muted-foreground mt-3 text-sm">
                     {review.name}, {date(review.createdAt)}
                   </p>
+                  {review.reply && (
+                    <div className="border-brand bg-paper mt-4 max-w-prose rounded-xl border-l-4 p-4">
+                      <p className="text-sm font-semibold">Reply from Momento</p>
+                      <p className="mt-1 whitespace-pre-line">{review.reply}</p>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

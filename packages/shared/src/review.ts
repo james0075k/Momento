@@ -35,6 +35,10 @@ export type ReviewInput = z.infer<typeof reviewInputSchema>;
 export const reviewModerationSchema = z.object({ status: reviewStatusSchema });
 export type ReviewModeration = z.infer<typeof reviewModerationSchema>;
 
+/** The shop's public answer to a review. An empty string removes it. */
+export const reviewReplyInputSchema = z.object({ reply: z.string().trim().max(1000) });
+export type ReviewReplyInput = z.infer<typeof reviewReplyInputSchema>;
+
 export const reviewSchema = z.object({
   id: objectIdSchema,
   productId: objectIdSchema.optional(),
@@ -46,6 +50,9 @@ export const reviewSchema = z.object({
   photos: z.array(z.string()),
   status: reviewStatusSchema,
   verified: z.boolean(),
+  /** The shop's public reply, shown under the review once it is approved. */
+  reply: z.string().optional(),
+  repliedAt: z.string().optional(),
   /** Admin/staff only. */
   verifiedOrderCode: z.string().optional(),
   createdAt: z.string(),

@@ -8,6 +8,9 @@ export interface NavItem {
 /** The admin menu. Items are added as their screens are built. */
 export const NAV: NavItem[] = [
   { label: "Dashboard", href: "/admin" },
+  { label: "Orders", href: "/admin/orders" },
+  { label: "Reviews", href: "/admin/reviews" },
+  { label: "Customers", href: "/admin/customers" },
   { label: "Products", href: "/admin/products" },
   { label: "Services", href: "/admin/services" },
   { label: "Categories", href: "/admin/categories" },

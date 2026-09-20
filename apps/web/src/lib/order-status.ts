@@ -23,3 +23,25 @@ export const ACTION_LABEL: Record<OrderStatus, string> = {
   delivered: "Mark as delivered",
   cancelled: "Cancel order",
 };
+
+/** The badge colour for each status. */
+export const STATUS_TONE: Record<OrderStatus, "neutral" | "success" | "danger" | "warning"> = {
+  pending_payment: "warning",
+  paid: "success",
+  printing: "neutral",
+  shipped: "neutral",
+  delivered: "success",
+  cancelled: "danger",
+};
+
+export const AREA_LABEL = {
+  inside_valley: "Inside Kathmandu Valley",
+  outside_valley: "Outside the valley",
+} as const;
+
+export const PAYMENT_LABEL = {
+  whatsapp: "WhatsApp",
+  esewa: "eSewa",
+  khalti: "Khalti",
+  bank: "Bank transfer",
+} as const;

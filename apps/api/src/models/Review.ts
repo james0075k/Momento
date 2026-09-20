@@ -16,6 +16,9 @@ const reviewSchema = new Schema(
       default: "pending",
       required: true,
     },
+    /** The shop's public answer, shown under the review once it is approved. */
+    reply: { type: String },
+    repliedAt: { type: Date },
     verified: { type: Boolean, default: false },
     verifiedOrderCode: { type: String },
   },

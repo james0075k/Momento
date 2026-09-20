@@ -8,5 +8,6 @@ export * from "./coupon";
 export * from "./settings";
 export * from "./review";
 export * from "./order";
+export * from "./customer";
 export * from "./promotions";
 export * from "./notifications";

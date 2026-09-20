@@ -4,6 +4,7 @@ import {
   type CreateOrderInput,
   type OrderListQuery,
   type TrackOrderInput,
+  type UpdateOrderNotesInput,
   type UpdateOrderStatusInput,
 } from "@momento/shared";
 import { asyncHandler } from "../middleware/asyncHandler";
@@ -11,7 +12,7 @@ import { HttpError } from "../middleware/errorHandler";
 import { CouponModel } from "../models/Coupon";
 import { OrderModel } from "../models/Order";
 import { couponDiscount } from "../services/orderPricing";
-import { createOrder, samePhone, updateOrderStatus } from "../services/orders";
+import { createOrder, samePhone, updateOrderNotes, updateOrderStatus } from "../services/orders";
 import { escapeRegex, paginated, skipFor } from "../services/pagination";
 import { referralSummary } from "../services/promotions";
 import { customerReplyLink, teamShareLink } from "../services/whatsappLinks";
@@ -69,6 +70,11 @@ export const orderController = {
       req.user!.id,
     );
     res.json({ data: order });
+  }),
+
+  updateNotes: asyncHandler(async (req, res) => {
+    const { adminNotes } = req.body as UpdateOrderNotesInput;
+    res.json({ data: await updateOrderNotes((req.params as { id: string }).id, adminNotes) });
   }),
 
   /** Public. Needs both the code and the phone it was placed with; returns no address. */

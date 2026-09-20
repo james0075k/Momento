@@ -81,8 +81,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }, [open]);
 
   return (
-    <div className="bg-paper text-ink min-h-screen md:grid md:grid-cols-[16rem_1fr]">
-      <aside className="bg-ink text-surface hidden flex-col justify-between p-4 md:sticky md:top-0 md:flex md:h-screen">
+    <div className="bg-paper text-ink print:bg-surface min-h-screen md:grid md:grid-cols-[16rem_1fr] print:block">
+      <aside className="bg-ink text-surface hidden flex-col justify-between p-4 md:sticky md:top-0 md:flex md:h-screen print:hidden">
         <div>
           <p className="font-heading mb-6 px-3 text-2xl font-semibold">Momento admin</p>
           <nav aria-label="Admin">
@@ -93,7 +93,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="min-w-0">
-        <div className="bg-ink text-surface flex h-14 items-center justify-between px-4 md:hidden">
+        <div className="bg-ink text-surface flex h-14 items-center justify-between px-4 md:hidden print:hidden">
           <p className="font-heading text-xl font-semibold">Momento admin</p>
           <button
             ref={menuButton}
@@ -106,7 +106,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <Menu aria-hidden className="size-6" />
           </button>
         </div>
-        <main className="mx-auto max-w-6xl p-4 md:p-8">{children}</main>
+        <main className="mx-auto max-w-6xl p-4 md:p-8 print:max-w-none print:p-0">{children}</main>
       </div>
 
       {open && (

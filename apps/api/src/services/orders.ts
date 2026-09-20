@@ -202,3 +202,14 @@ export async function updateOrderStatus(
   }
   return updated;
 }
+
+/** Notes for staff only; changing them never touches the status or its history. */
+export async function updateOrderNotes(id: string, adminNotes: string) {
+  const order = await OrderModel.findByIdAndUpdate(
+    id,
+    adminNotes ? { $set: { adminNotes } } : { $unset: { adminNotes: "" } },
+    { new: true },
+  );
+  if (!order) throw new HttpError(404, "Order not found");
+  return order;
+}
